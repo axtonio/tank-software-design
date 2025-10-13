@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer;
+package ru.mipt.bit.platformer.classes;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -52,10 +52,10 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         tank = new Tank(1, 1, MOVEMENT_SPEED);
         tree = new Tree(1, 3);
-        
+
         tankGraphics = new Graphics("images/tank_blue.png");
         treeGraphics = new Graphics("images/greenTree.png");
-        
+
         moveRectangleAtTileCenter(groundLayer, treeGraphics.boundingBox, tree.coordinates);
     }
 
@@ -68,9 +68,9 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         Direction direction = inputController.getDirection();
         GameObject[] obstacles = {tree};
-        
+
         tank.tryMove(direction, obstacles);
-        
+
         if (inputController.isFireButtonPressed()) {
             tank.fire();
         }
