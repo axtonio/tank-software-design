@@ -1,5 +1,5 @@
 def versions = [:]
-versions.gdx = '1.9.11'
+versions.gdx = '1.12.1'
 
 def deps = [:]
 
