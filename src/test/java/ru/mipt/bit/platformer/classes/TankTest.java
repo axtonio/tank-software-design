@@ -17,6 +17,8 @@ class TankTest {
         assertEquals(1f, tank.movementProgress);
         assertEquals(0f, tank.rotation);
         assertEquals(0.5f, tank.movementSpeed);
+        assertEquals(100, tank.getMaxHealth());
+        assertEquals(100, tank.getHealth());
     }
 
     @Test
@@ -44,6 +46,15 @@ class TankTest {
         assertEquals(1, tank.destinationCoordinates.x);
         assertEquals(1, tank.destinationCoordinates.y);
         assertEquals(1f, tank.movementProgress); // Движение не началось
+    }
+
+    @Test
+    void testSetHealthBounds() {
+        Tank tank = new Tank(0, 0, 0.4f);
+        tank.setHealth(150);
+        assertEquals(100, tank.getHealth());
+        tank.setHealth(-10);
+        assertEquals(0, tank.getHealth());
     }
 
     @Test

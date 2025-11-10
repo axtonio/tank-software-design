@@ -4,10 +4,14 @@ import static com.badlogic.gdx.math.MathUtils.isEqual;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-public class Tank extends MovableEntity {
+public class Tank extends MovableEntity implements HasHealth {
+    private final int maxHealth;
+    private int health;
 
     public Tank(int xCooordinate, int yCoordinate, float movementSpeed) {
         super(xCooordinate, yCoordinate, movementSpeed);
+        this.maxHealth = 100;
+        this.health = 100;
     }
 
     public void tryMove(Direction dir, GameObject[] obstacles) {
@@ -44,5 +48,28 @@ public class Tank extends MovableEntity {
 
     public void fire() {
         // Логика стрельбы будет добавлена позже
+    }
+
+    @Override
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    @Override
+    public int getHealth() {
+        return health;
+    }
+
+    @Override
+    public void setHealth(int health) {
+        if (health < 0) {
+            this.health = 0;
+            return;
+        }
+        if (health > maxHealth) {
+            this.health = maxHealth;
+            return;
+        }
+        this.health = health;
     }
 }
