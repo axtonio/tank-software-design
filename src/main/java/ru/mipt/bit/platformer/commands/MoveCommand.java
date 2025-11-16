@@ -25,6 +25,7 @@ public class MoveCommand implements Command {
         if (entity.movementProgress < 1f) {
             return;
         }
+        entity.setFacingDirection(direction);
         GridPoint2 from = entity.coordinates;
         if (!occupancy.canMove(entity, from, direction)) {
             return;
@@ -32,7 +33,6 @@ public class MoveCommand implements Command {
         GridPoint2 to = new GridPoint2(from).add(direction.vector);
         entity.destinationCoordinates.set(to);
         entity.movementProgress = 0f;
-        entity.rotation = direction.rotation;
         occupancy.reserve(entity, from, to);
     }
 }

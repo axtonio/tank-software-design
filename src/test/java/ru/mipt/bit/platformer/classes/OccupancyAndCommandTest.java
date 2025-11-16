@@ -42,4 +42,19 @@ class OccupancyAndCommandTest {
         assertEquals(1, t.destinationCoordinates.y);
         assertEquals(0f, t.movementProgress);
     }
+
+    @Test
+    void testMoveCommandRotatesWhenBlocked() {
+        OccupancyManager occ = new OccupancyManager(5, 5);
+        java.util.HashSet<GridPoint2> obs = new java.util.HashSet<>();
+        obs.add(new GridPoint2(1, 2));
+        occ.setStaticObstacles(obs);
+        Tank t = new Tank(1, 1, 0.4f);
+
+        new MoveCommand(t, Direction.UP, occ).execute();
+
+        assertEquals(1, t.destinationCoordinates.x);
+        assertEquals(1, t.destinationCoordinates.y);
+        assertEquals(Direction.UP.getRotation(), t.rotation);
+    }
 }
