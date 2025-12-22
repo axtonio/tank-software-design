@@ -1,8 +1,9 @@
 package ru.mipt.bit.platformer.recommendation;
 
-import ru.mipt.bit.platformer.classes.Direction;
+import ru.mipt.bit.platformer.game.ai.Decision;
+import ru.mipt.bit.platformer.game.entities.Direction;
 
-public class EnemyDecision {
+public class EnemyDecision implements Decision {
     private final boolean shouldShoot;
     private final Direction direction;
 
@@ -23,10 +24,12 @@ public class EnemyDecision {
         return new EnemyDecision(false, Direction.IDLE);
     }
 
+    @Override
     public boolean shouldShoot() {
         return shouldShoot;
     }
 
+    @Override
     public Direction getDirection() {
         return direction;
     }

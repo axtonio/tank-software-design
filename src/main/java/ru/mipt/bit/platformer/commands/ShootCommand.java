@@ -1,11 +1,12 @@
 package ru.mipt.bit.platformer.commands;
 
-import ru.mipt.bit.platformer.classes.Tank;
+import ru.mipt.bit.platformer.game.commands.Command;
+import ru.mipt.bit.platformer.game.entities.GameCharacter;
 
 public class ShootCommand implements Command {
-    private final Tank tank;
+    private final GameCharacter tank;
 
-    public ShootCommand(Tank tank) {
+    public ShootCommand(GameCharacter tank) {
         this.tank = tank;
     }
 
@@ -17,4 +18,3 @@ public class ShootCommand implements Command {
         tank.fire();
     }
 }
-

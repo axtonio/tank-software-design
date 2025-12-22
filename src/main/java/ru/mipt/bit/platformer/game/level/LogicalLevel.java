@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.logic;
+package ru.mipt.bit.platformer.game.level;
 
 import static com.badlogic.gdx.math.MathUtils.isEqual;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.continueProgress;
@@ -12,56 +12,59 @@ import java.util.Map;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-import ru.mipt.bit.platformer.ai.RandomAIController;
-import ru.mipt.bit.platformer.classes.Bullet;
-import ru.mipt.bit.platformer.classes.Direction;
-import ru.mipt.bit.platformer.classes.Positionable;
-import ru.mipt.bit.platformer.classes.Tank;
-import ru.mipt.bit.platformer.classes.Tree;
-import ru.mipt.bit.platformer.commands.Command;
-import ru.mipt.bit.platformer.commands.MoveCommand;
-import ru.mipt.bit.platformer.commands.ShootCommand;
-import ru.mipt.bit.platformer.recommendation.EnemyDecision;
-import ru.mipt.bit.platformer.recommendation.RecommendationEngineAdapter;
+import ru.mipt.bit.platformer.game.ai.AIController;
+import ru.mipt.bit.platformer.game.ai.Decision;
+import ru.mipt.bit.platformer.game.ai.DecisionStrategy;
+import ru.mipt.bit.platformer.game.commands.Command;
+import ru.mipt.bit.platformer.game.commands.CommandsFactory;
+import ru.mipt.bit.platformer.game.commands.OccupancyManager;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.entities.GameCharacter;
+import ru.mipt.bit.platformer.game.entities.GameObject;
+import ru.mipt.bit.platformer.game.entities.Positionable;
+import ru.mipt.bit.platformer.game.entities.Projectile;
+import ru.mipt.bit.platformer.game.entities.ProjectileRegistry;
 
 public class LogicalLevel implements LevelObservable, ProjectileRegistry {
     private static final float ENEMY_SHOT_COOLDOWN = 0.7f;
-    private final Tank player;
-    private final ArrayList<Tree> obstacles;
-    private final ArrayList<Tank> enemies;
-    private final ArrayList<RandomAIController> enemyAI;
-    private final ArrayList<Bullet> bullets = new ArrayList<>();
+    private final GameCharacter player;
+    private final List<GameObject> obstacles;
+    private final List<GameCharacter> enemies;
+    private final List<AIController> enemyAI;
+    private final ArrayList<Projectile> bullets = new ArrayList<>();
     private final ArrayList<LevelObserver> observers = new ArrayList<>();
     private final OccupancyManager occupancy;
-    private final RecommendationEngineAdapter recommendationAdapter;
+    private final DecisionStrategy decisionStrategy;
+    private final CommandsFactory commandsFactory;
     private boolean playerRemoved = false;
-    private final Map<Tank, Float> enemyShotCooldowns = new HashMap<>();
+    private final Map<GameCharacter, Float> enemyShotCooldowns = new HashMap<>();
 
-    public LogicalLevel(Tank player, ArrayList<Tree> obstacles, ArrayList<Tank> enemies,
-            ArrayList<RandomAIController> enemyAI, OccupancyManager occupancy,
-            RecommendationEngineAdapter recommendationAdapter) {
+    public LogicalLevel(GameCharacter player, List<GameObject> obstacles, List<GameCharacter> enemies,
+            List<AIController> enemyAI, OccupancyManager occupancy,
+            DecisionStrategy decisionStrategy, CommandsFactory commandsFactory) {
         this.player = player;
         this.obstacles = obstacles;
         this.enemies = enemies;
         this.enemyAI = enemyAI;
         this.occupancy = occupancy;
-        this.recommendationAdapter = recommendationAdapter;
+        this.decisionStrategy = decisionStrategy;
+        this.commandsFactory = commandsFactory;
 
         this.occupancy.registerPosition(player, player.coordinates);
-        for (Tank enemy : enemies) {
+        for (GameCharacter enemy : enemies) {
             this.occupancy.registerPosition(enemy, enemy.coordinates);
         }
     }
 
-    public Tank getPlayer() {
+    public GameCharacter getPlayer() {
         return player;
     }
 
-    public List<Tree> getObstacles() {
+    public List<GameObject> getObstacles() {
         return Collections.unmodifiableList(obstacles);
     }
 
-    public List<Tank> getEnemies() {
+    public List<GameCharacter> getEnemies() {
         return Collections.unmodifiableList(enemies);
     }
 
@@ -71,14 +74,14 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
 
     public void collectEnemyCommands(List<Command> buffer) {
         for (int i = 0; i < enemies.size(); i++) {
-            Tank enemy = enemies.get(i);
+            GameCharacter enemy = enemies.get(i);
             if (enemy.getHealth() <= 0) {
                 continue;
             }
             if (enemy.movementProgress < 1f) {
                 continue;
             }
-            EnemyDecision decision = recommendationAdapter.recommend(enemy, player);
+            Decision decision = decisionStrategy.recommend(enemy, player);
             boolean wantsShoot = decision.shouldShoot() || enemyAI.get(i).shouldShoot();
             if (wantsShoot) {
                 if (isShotReady(enemy)) {
@@ -86,7 +89,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
                     if (aimDirection != null) {
                         enemy.setFacingDirection(aimDirection);
                     }
-                    buffer.add(new ShootCommand(enemy));
+                    buffer.add(commandsFactory.createShootCommand(enemy));
                     triggerShotCooldown(enemy);
                 }
                 continue;
@@ -95,7 +98,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
             if (dir == null || dir == Direction.IDLE) {
                 dir = enemyAI.get(i).chooseDirection();
             }
-            buffer.add(new MoveCommand(enemy, dir, occupancy));
+            buffer.add(commandsFactory.createMoveCommand(enemy, dir, occupancy));
         }
     }
 
@@ -103,7 +106,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         updateMovement(player, deltaTime);
         int index = 0;
         while (index < enemies.size()) {
-            Tank enemy = enemies.get(index);
+            GameCharacter enemy = enemies.get(index);
             if (enemy.getHealth() <= 0) {
                 removeEnemyAt(index);
                 continue;
@@ -115,7 +118,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         updateEnemyCooldowns(deltaTime);
     }
 
-    private void updateMovement(Tank tank, float deltaTime) {
+    private void updateMovement(GameCharacter tank, float deltaTime) {
         if (tank.getHealth() <= 0) {
             return;
         }
@@ -129,19 +132,19 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         }
     }
 
-    private boolean isShotReady(Tank enemy) {
+    private boolean isShotReady(GameCharacter enemy) {
         Float cooldown = enemyShotCooldowns.get(enemy);
         return cooldown == null || cooldown <= 0f;
     }
 
-    private void triggerShotCooldown(Tank enemy) {
+    private void triggerShotCooldown(GameCharacter enemy) {
         enemyShotCooldowns.put(enemy, ENEMY_SHOT_COOLDOWN);
     }
 
     private void updateEnemyCooldowns(float deltaTime) {
-        Iterator<Map.Entry<Tank, Float>> iterator = enemyShotCooldowns.entrySet().iterator();
+        Iterator<Map.Entry<GameCharacter, Float>> iterator = enemyShotCooldowns.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<Tank, Float> entry = iterator.next();
+            Map.Entry<GameCharacter, Float> entry = iterator.next();
             float updated = entry.getValue() - deltaTime;
             if (updated <= 0f || entry.getKey().getHealth() <= 0) {
                 iterator.remove();
@@ -154,7 +157,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
     private void updateBullets(float deltaTime) {
         int index = 0;
         while (index < bullets.size()) {
-            Bullet bullet = bullets.get(index);
+            Projectile bullet = bullets.get(index);
             bullet.movementProgress = continueProgress(bullet.movementProgress, deltaTime, bullet.movementSpeed);
             if (isEqual(bullet.movementProgress, 1f)) {
                 bullet.coordinates.set(bullet.destinationCoordinates);
@@ -171,7 +174,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
     }
 
     @Override
-    public boolean register(Bullet bullet) {
+    public boolean register(Projectile bullet) {
         if (bullet == null) {
             return false;
         }
@@ -188,7 +191,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         notifyAdded(bullet);
         bullet.destinationCoordinates.set(bullet.coordinates);
         bullet.movementProgress = 1f;
-        Bullet collision = findBulletCollision(bullet);
+        Projectile collision = findBulletCollision(bullet);
         if (collision != null) {
             removeBullet(collision);
             removeBullet(bullet);
@@ -200,7 +203,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         return true;
     }
 
-    private boolean scheduleBulletAdvance(Bullet bullet) {
+    private boolean scheduleBulletAdvance(Projectile bullet) {
         GridPoint2 next = bullet.peekNextStep();
         if (!occupancy.isWithinBounds(next)) {
             return false;
@@ -214,7 +217,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         return true;
     }
 
-    private boolean handleBulletArrival(Bullet bullet) {
+    private boolean handleBulletArrival(Projectile bullet) {
         if (!occupancy.isWithinBounds(bullet.coordinates)) {
             removeBullet(bullet);
             return true;
@@ -228,7 +231,7 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
             removeBullet(bullet);
             return true;
         }
-        Bullet collision = findBulletCollision(bullet);
+        Projectile collision = findBulletCollision(bullet);
         if (collision != null) {
             removeBullet(collision);
             removeBullet(bullet);
@@ -237,8 +240,8 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         return false;
     }
 
-    private Bullet findBulletCollision(Bullet bullet) {
-        for (Bullet other : bullets) {
+    private Projectile findBulletCollision(Projectile bullet) {
+        for (Projectile other : bullets) {
             if (other == bullet) {
                 continue;
             }
@@ -252,13 +255,13 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         return null;
     }
 
-    private boolean damageTankAt(GridPoint2 position, Tank shooter, int damage) {
+    private boolean damageTankAt(GridPoint2 position, GameCharacter shooter, int damage) {
         if (shooter == null || damage <= 0) {
             return false;
         }
         if (shooter == player) {
             for (int i = 0; i < enemies.size(); i++) {
-                Tank enemy = enemies.get(i);
+                GameCharacter enemy = enemies.get(i);
                 if (enemy.coordinates.equals(position)) {
                     enemy.takeDamage(damage);
                     if (enemy.getHealth() <= 0) {
@@ -281,11 +284,11 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
 
     private boolean removeObstacleAt(GridPoint2 position) {
         for (int i = 0; i < obstacles.size(); i++) {
-            Tree tree = obstacles.get(i);
-            if (tree.coordinates.equals(position)) {
+            GameObject obstacle = obstacles.get(i);
+            if (obstacle.coordinates.equals(position)) {
                 obstacles.remove(i);
                 occupancy.removeStaticObstacle(position);
-                notifyRemoved(tree);
+                notifyRemoved(obstacle);
                 return true;
             }
         }
@@ -306,14 +309,14 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         if (index < 0 || index >= enemies.size()) {
             return;
         }
-        Tank removed = enemies.remove(index);
+        GameCharacter removed = enemies.remove(index);
         enemyAI.remove(index);
         occupancy.release(removed);
         occupancy.unregisterPosition(removed);
         notifyRemoved(removed);
     }
 
-    private void removeBullet(Bullet bullet) {
+    private void removeBullet(Projectile bullet) {
         if (bullets.remove(bullet)) {
             notifyRemoved(bullet);
         }
@@ -326,13 +329,13 @@ public class LogicalLevel implements LevelObservable, ProjectileRegistry {
         }
         observers.add(observer);
         observer.onObjectAdded(player);
-        for (Tree tree : obstacles) {
-            observer.onObjectAdded(tree);
+        for (GameObject obstacle : obstacles) {
+            observer.onObjectAdded(obstacle);
         }
-        for (Tank enemy : enemies) {
+        for (GameCharacter enemy : enemies) {
             observer.onObjectAdded(enemy);
         }
-        for (Bullet bullet : bullets) {
+        for (Projectile bullet : bullets) {
             observer.onObjectAdded(bullet);
         }
     }

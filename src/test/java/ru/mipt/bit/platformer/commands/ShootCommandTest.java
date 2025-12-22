@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.Test;
 
-import ru.mipt.bit.platformer.classes.Bullet;
-import ru.mipt.bit.platformer.classes.Direction;
 import ru.mipt.bit.platformer.classes.Tank;
-import ru.mipt.bit.platformer.logic.ProjectileRegistry;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.entities.Projectile;
+import ru.mipt.bit.platformer.game.entities.ProjectileRegistry;
 
 class ShootCommandTest {
 
@@ -36,13 +36,12 @@ class ShootCommandTest {
     }
 
     private static class TestRegistry implements ProjectileRegistry {
-        private Bullet lastBullet;
+        private Projectile lastBullet;
 
         @Override
-        public boolean register(Bullet bullet) {
+        public boolean register(Projectile bullet) {
             this.lastBullet = bullet;
             return true;
         }
     }
 }
-

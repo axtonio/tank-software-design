@@ -2,9 +2,10 @@ package ru.mipt.bit.platformer.commands;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-import ru.mipt.bit.platformer.classes.Direction;
-import ru.mipt.bit.platformer.classes.MovableEntity;
-import ru.mipt.bit.platformer.logic.OccupancyManager;
+import ru.mipt.bit.platformer.game.commands.Command;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.entities.MovableEntity;
+import ru.mipt.bit.platformer.game.commands.OccupancyManager;
 
 public class MoveCommand implements Command {
     private final MovableEntity entity;

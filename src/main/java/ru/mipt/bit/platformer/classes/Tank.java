@@ -1,12 +1,12 @@
 package ru.mipt.bit.platformer.classes;
 
-import static com.badlogic.gdx.math.MathUtils.isEqual;
-
 import com.badlogic.gdx.math.GridPoint2;
 
-import ru.mipt.bit.platformer.logic.ProjectileRegistry;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.entities.GameCharacter;
+import ru.mipt.bit.platformer.game.entities.ProjectileRegistry;
 
-public class Tank extends MovableEntity implements HasHealth {
+public class Tank extends GameCharacter {
     private final int maxHealth;
     private int health;
     private ProjectileRegistry projectileRegistry;
@@ -17,42 +17,12 @@ public class Tank extends MovableEntity implements HasHealth {
         this.health = 100;
     }
 
-    public void tryMove(Direction dir, GameObject[] obstacles) {
-        if (isEqual(movementProgress, 1f)) {
-            GridPoint2 targetPosition = getTargetPosition(dir);
-            boolean canMove = true;
-
-            for (GameObject obstacle : obstacles) {
-                if (targetPosition.equals(obstacle.coordinates)) {
-                    canMove = false;
-                    break;
-                }
-            }
-
-            if (canMove) {
-                destinationCoordinates.set(targetPosition);
-                movementProgress = 0f;
-            }
-
-            if (dir != Direction.IDLE) {
-                setFacingDirection(dir);
-            }
-        }
-    }
-
-    private GridPoint2 getTargetPosition(Direction direction) {
-        if (direction == Direction.IDLE) {
-            return new GridPoint2(coordinates);
-        }
-        GridPoint2 targetPosition = new GridPoint2(coordinates);
-        targetPosition.add(direction.vector);
-        return targetPosition;
-    }
-
+    @Override
     public void setProjectileRegistry(ProjectileRegistry projectileRegistry) {
         this.projectileRegistry = projectileRegistry;
     }
 
+    @Override
     public void fire() {
         if (projectileRegistry == null) {
             return;
@@ -66,6 +36,7 @@ public class Tank extends MovableEntity implements HasHealth {
         projectileRegistry.register(bullet);
     }
 
+    @Override
     public void takeDamage(int damage) {
         if (damage <= 0) {
             return;

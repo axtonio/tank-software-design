@@ -4,6 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import com.badlogic.gdx.math.GridPoint2;
+
+import ru.mipt.bit.platformer.commands.MoveCommand;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.commands.OccupancyManager;
+
 class TankTest {
 
     @Test
@@ -24,9 +30,10 @@ class TankTest {
     @Test
     void testTryMoveWithNoObstacles() {
         Tank tank = new Tank(1, 1, 0.4f);
-        GameObject[] emptyObstacles = {};
+        OccupancyManager occupancy = new OccupancyManager(10, 10);
+        MoveCommand command = new MoveCommand(tank, Direction.RIGHT, occupancy);
 
-        tank.tryMove(Direction.RIGHT, emptyObstacles);
+        command.execute();
 
         assertEquals(2, tank.destinationCoordinates.x);
         assertEquals(1, tank.destinationCoordinates.y);
@@ -37,10 +44,14 @@ class TankTest {
     @Test
     void testTryMoveWithObstacle() {
         Tank tank = new Tank(1, 1, 0.4f);
-        Tree tree = new Tree(2, 1); // Преграда справа от танка
-        GameObject[] obstacles = { tree };
+        OccupancyManager occupancy = new OccupancyManager(10, 10);
+        Tree tree = new Tree(2, 1);
+        java.util.HashSet<GridPoint2> staticObs = new java.util.HashSet<>();
+        staticObs.add(tree.coordinates);
+        occupancy.setStaticObstacles(staticObs);
 
-        tank.tryMove(Direction.RIGHT, obstacles);
+        MoveCommand command = new MoveCommand(tank, Direction.RIGHT, occupancy);
+        command.execute();
 
         // Танк не должен двигаться, так как путь заблокирован
         assertEquals(1, tank.destinationCoordinates.x);
@@ -60,11 +71,17 @@ class TankTest {
     @Test
     void testTryMoveToAvailableDirectionWithMultipleObstacles() {
         Tank tank = new Tank(1, 1, 0.4f);
+        OccupancyManager occupancy = new OccupancyManager(10, 10);
+
         Tree tree1 = new Tree(2, 1); // Преграда справа
         Tree tree2 = new Tree(0, 1); // Преграда слева
-        GameObject[] obstacles = { tree1, tree2 };
+        java.util.HashSet<GridPoint2> staticObs = new java.util.HashSet<>();
+        staticObs.add(tree1.coordinates);
+        staticObs.add(tree2.coordinates);
+        occupancy.setStaticObstacles(staticObs);
 
-        tank.tryMove(Direction.UP, obstacles);
+        MoveCommand command = new MoveCommand(tank, Direction.UP, occupancy);
+        command.execute();
 
         // Танк должен двигаться вверх, так как этот путь свободен
         assertEquals(1, tank.destinationCoordinates.x);

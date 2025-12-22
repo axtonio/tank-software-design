@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.classes;
+package ru.mipt.bit.platformer.game.entities;
 
 public abstract class GameObject extends Positionable {
 
@@ -6,3 +6,4 @@ public abstract class GameObject extends Positionable {
         super(xCoordinate, yCoordinate);
     }
 }
+

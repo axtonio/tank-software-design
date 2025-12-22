@@ -2,14 +2,14 @@ package ru.mipt.bit.platformer.graphics;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Pixmap.Format;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.Disposable;
 
 import ru.mipt.bit.platformer.classes.Graphics;
-import ru.mipt.bit.platformer.classes.HasHealth;
-import ru.mipt.bit.platformer.classes.MovableEntity;
+import ru.mipt.bit.platformer.game.entities.HasHealth;
+import ru.mipt.bit.platformer.game.entities.MovableEntity;
 
 public class HealthBarEntityRenderer extends EntityRendererDecorator implements Disposable {
     private final Texture pixelTexture;
@@ -60,4 +60,3 @@ public class HealthBarEntityRenderer extends EntityRendererDecorator implements 
         pixelTexture.dispose();
     }
 }
-

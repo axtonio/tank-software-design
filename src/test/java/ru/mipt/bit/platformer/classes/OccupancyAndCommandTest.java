@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import com.badlogic.gdx.math.GridPoint2;
 
 import ru.mipt.bit.platformer.commands.MoveCommand;
-import ru.mipt.bit.platformer.logic.OccupancyManager;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.commands.OccupancyManager;
 
 class OccupancyAndCommandTest {
 

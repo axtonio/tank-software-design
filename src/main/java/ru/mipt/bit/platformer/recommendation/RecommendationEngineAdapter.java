@@ -2,17 +2,19 @@ package ru.mipt.bit.platformer.recommendation;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-import ru.mipt.bit.platformer.classes.Direction;
-import ru.mipt.bit.platformer.classes.Tank;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.ai.DecisionStrategy;
+import ru.mipt.bit.platformer.game.entities.GameCharacter;
 
-public class RecommendationEngineAdapter {
+public class RecommendationEngineAdapter implements DecisionStrategy {
     private final RecommendationEngineClient client;
 
     public RecommendationEngineAdapter(RecommendationEngineClient client) {
         this.client = client;
     }
 
-    public EnemyDecision recommend(Tank enemy, Tank target) {
+    @Override
+    public EnemyDecision recommend(GameCharacter enemy, GameCharacter target) {
         if (enemy == null || target == null) {
             return EnemyDecision.idle();
         }
@@ -37,4 +39,3 @@ public class RecommendationEngineAdapter {
         }
     }
 }
-

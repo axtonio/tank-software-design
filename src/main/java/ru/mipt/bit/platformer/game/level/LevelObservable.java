@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.logic;
+package ru.mipt.bit.platformer.game.level;
 
 public interface LevelObservable {
     void addObserver(LevelObserver observer);

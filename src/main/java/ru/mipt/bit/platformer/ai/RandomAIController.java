@@ -2,9 +2,10 @@ package ru.mipt.bit.platformer.ai;
 
 import java.util.Random;
 
-import ru.mipt.bit.platformer.classes.Direction;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.ai.AIController;
 
-public class RandomAIController {
+public class RandomAIController implements AIController {
     private final Random random = new Random();
     private final float shootProbability;
 
@@ -16,6 +17,7 @@ public class RandomAIController {
         this.shootProbability = Math.max(0f, Math.min(1f, shootProbability));
     }
 
+    @Override
     public Direction chooseDirection() {
         int r = random.nextInt(4);
         switch (r) {
@@ -30,9 +32,8 @@ public class RandomAIController {
         }
     }
 
+    @Override
     public boolean shouldShoot() {
         return random.nextFloat() < shootProbability;
     }
 }
-
-

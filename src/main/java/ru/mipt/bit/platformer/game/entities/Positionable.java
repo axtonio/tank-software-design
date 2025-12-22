@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.classes;
+package ru.mipt.bit.platformer.game.entities;
 
 import com.badlogic.gdx.math.GridPoint2;
 
@@ -9,3 +9,4 @@ public class Positionable {
         this.coordinates = new GridPoint2(xCoordinate, yCoordinate);
     }
 }
+

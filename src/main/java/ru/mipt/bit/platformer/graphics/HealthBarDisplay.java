@@ -1,6 +1,11 @@
 package ru.mipt.bit.platformer.graphics;
 
-public class HealthBarDisplay {
+import com.badlogic.gdx.graphics.g2d.Batch;
+
+import ru.mipt.bit.platformer.classes.Graphics;
+import ru.mipt.bit.platformer.game.entities.MovableEntity;
+
+public class HealthBarDisplay implements EntityRenderer {
     private final EntityRenderer baseRenderer;
     private final EntityRenderer decoratedRenderer;
     private EntityRenderer currentRenderer;
@@ -28,5 +33,14 @@ public class HealthBarDisplay {
     public EntityRenderer getRenderer() {
         return currentRenderer;
     }
-}
 
+    @Override
+    public void render(Batch batch, MovableEntity entity, Graphics graphics) {
+        currentRenderer.render(batch, entity, graphics);
+    }
+
+    @Override
+    public void dispose() {
+        // Resources are managed by Spring beans (baseRenderer and decoratedRenderer)
+    }
+}

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import ru.mipt.bit.platformer.input.InputController;
+import ru.mipt.bit.platformer.game.input.InputController;
 
 class KeyboardListenerTest {
 

@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.logic;
+package ru.mipt.bit.platformer.game.commands;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,7 +7,7 @@ import java.util.Set;
 
 import com.badlogic.gdx.math.GridPoint2;
 
-import ru.mipt.bit.platformer.classes.Direction;
+import ru.mipt.bit.platformer.game.entities.Direction;
 
 public class OccupancyManager {
     private final int mapWidth;

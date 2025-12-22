@@ -1,6 +1,5 @@
-package ru.mipt.bit.platformer.input;
-
-import ru.mipt.bit.platformer.classes.Direction;
+package ru.mipt.bit.platformer.game.input;
+import ru.mipt.bit.platformer.game.entities.Direction;
 
 public interface InputController {
     Direction getDirection();

@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.classes;
+package ru.mipt.bit.platformer.game.entities;
 
 public interface HasHealth {
     int getMaxHealth();

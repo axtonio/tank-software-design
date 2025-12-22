@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer.classes;
+package ru.mipt.bit.platformer.game.entities;
 
 import com.badlogic.gdx.math.GridPoint2;
 
@@ -26,3 +26,4 @@ public enum Direction {
         return rotation;
     }
 }
+

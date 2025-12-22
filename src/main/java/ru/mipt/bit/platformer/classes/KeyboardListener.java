@@ -12,7 +12,8 @@ import static com.badlogic.gdx.Input.Keys.W;
 
 import com.badlogic.gdx.Gdx;
 
-import ru.mipt.bit.platformer.input.InputController;
+import ru.mipt.bit.platformer.game.entities.Direction;
+import ru.mipt.bit.platformer.game.input.InputController;
 
 public class KeyboardListener implements InputController {
 
