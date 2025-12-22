@@ -29,10 +29,10 @@
 +---------------------------------------------------------------+
 ```
 
-- **Domain** (`ru.mipt.bit.platformer.domain`): Центральный слой. Определяет основные сущности (`GameCharacter`, `GameObject`) и правила игры (`GameRules`). Полностью независим от фреймворков и деталей реализации
-- **Application** (`ru.mipt.bit.platformer.application`): Слой логики приложения. Координирует игровой процесс через `GameLoop`, определяет интерфейсы для генерации уровней (`LevelGenerator`) и фабрики команд (`CommandsFactory`). Зависит только от Domain
-- **Infrastructure** (`ru.mipt.bit.platformer.infrastructure`): Слой инфраструктуры. Реализует интерфейсы Application (например, `CommandsFactoryImpl`, `LevelGeneratorImpl`) и отвечает за взаимодействие с внешним миром (рендеринг через `WorldRenderer`, ввод пользователя)
-- **Config** (`ru.mipt.bit.platformer.config`): Слой конфигурации. Собирает приложение воедино, внедряя зависимости (Spring Context, `GameConfig`, `GraphicsConfigurator`). Точка входа в приложение
+- **Domain** (`ru.mipt.bit.platformer.domain`): Cущность (главная логика игры). Определяет основные сущности (`GameCharacter`, `GameObject`) и правила игры (`GameRules`). Абстракции, независим от деталей
+- **Application** (`ru.mipt.bit.platformer.application`): Варинаты использования. Зависит от Domain
+- **Infrastructure** (`ru.mipt.bit.platformer.infrastructure`): Инфра, уровень адаптеров, презентаторов и контроллеров. Заивисит от Application
+- **Config** (`ru.mipt.bit.platformer.config`): Конфигураци, фреймфорк. Собирает приложение воедино, внедряя зависимости (Spring Context, `GameConfig`, `GraphicsConfigurator`). Точка входа в приложение
 
 ## Требования
 
