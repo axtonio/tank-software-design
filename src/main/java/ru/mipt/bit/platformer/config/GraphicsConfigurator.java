@@ -1,10 +1,10 @@
 package ru.mipt.bit.platformer.config;
 
-import ru.mipt.bit.platformer.classes.Bullet;
-import ru.mipt.bit.platformer.classes.Graphics;
-import ru.mipt.bit.platformer.classes.Tank;
-import ru.mipt.bit.platformer.classes.Tree;
-import ru.mipt.bit.platformer.graphics.GraphicsLevel;
+import ru.mipt.bit.platformer.infrastructure.entities.Bullet;
+import ru.mipt.bit.platformer.infrastructure.entities.Tank;
+import ru.mipt.bit.platformer.infrastructure.entities.Tree;
+import ru.mipt.bit.platformer.infrastructure.graphics.Graphics;
+import ru.mipt.bit.platformer.infrastructure.graphics.GraphicsLevel;
 
 public class GraphicsConfigurator {
     public void configure(GraphicsLevel graphicsLevel) {

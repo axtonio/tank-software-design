@@ -9,8 +9,8 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
 import ru.mipt.bit.platformer.config.GameConfig;
-import ru.mipt.bit.platformer.graphics.WorldRenderer;
-import ru.mipt.bit.platformer.game.pipeline.GameLoop;
+import ru.mipt.bit.platformer.application.pipeline.GameLoop;
+import ru.mipt.bit.platformer.infrastructure.graphics.WorldRenderer;
 
 public class GameDesktopLauncher implements ApplicationListener {
     private ApplicationContext applicationContext;
