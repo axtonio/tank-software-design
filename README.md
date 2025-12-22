@@ -4,45 +4,35 @@
 
 Проект следует принципам **Луковой архитектуры (Onion Architecture)**:
 
-```mermaid
-graph TD
-    subgraph Config [Config & Entry Point]
-        L[GameDesktopLauncher]
-        C[GameConfig]
-    end
-
-    subgraph Infrastructure [Infrastructure Layer]
-        G[Graphics (LibGDX)]
-        I[Input Impl]
-        AI[AI Impl]
-    end
-
-    subgraph Application [Application Layer]
-        GL[GameLoop]
-        LL[LogicalLevel]
-        CMD[Commands]
-    end
-
-    subgraph Domain [Domain Layer]
-        E[Entities]
-        Interfaces[Interfaces]
-    end
-
-    %% Dependencies
-    Config --> Infrastructure
-    Config --> Application
-    Config --> Domain
-
-    Infrastructure --> Application
-    Infrastructure --> Domain
-
-    Application --> Domain
+```plaintext
++---------------------------------------------------------------+
+|                            Config                             |
+|    (GameDesktopLauncher, GameConfig, GraphicsConfigurator)    |
++-------------------------------+-------------------------------+
+                                |
+                                v
++-------------------------------+-------------------------------+
+|                        Infrastructure                         |
+| (CommandsFactoryImpl, LevelGeneratorImpl, WorldRenderer, ...) |
++-------------------------------+-------------------------------+
+                                |
+                                v
++-------------------------------+-------------------------------+
+|                          Application                          |
+|       (GameLoop, CommandsFactory, LevelGenerator, ...)        |
++-------------------------------+-------------------------------+
+                                |
+                                v
++-------------------------------+-------------------------------+
+|                            Domain                             |
+|          (GameRules, GameObject, GameCharacter, ...)          |
++---------------------------------------------------------------+
 ```
 
-- **Domain** (`ru.mipt.bit.platformer.domain`): Центральный слой. Содержит бизнес-сущности (`Tank`, `Bullet`) и интерфейсы. Не зависит от внешних библиотек.
-- **Application** (`ru.mipt.bit.platformer.application`): Слой вариантов использования (Use Cases). Управляет потоком игры (`GameLoop`), логикой уровня и командами. Зависит только от Domain.
-- **Infrastructure** (`ru.mipt.bit.platformer.infrastructure`): Слой деталей реализации. Реализует интерфейсы из Domain/Application. Здесь находится код, связанный с LibGDX (графика, ввод) и конкретные реализации алгоритмов.
-- **Config** (`ru.mipt.bit.platformer.config`): Слой конфигурации. Использует Spring для связывания всех компонентов воедино (Dependency Injection).
+- **Domain** (`ru.mipt.bit.platformer.domain`): Центральный слой. Определяет основные сущности (`GameCharacter`, `GameObject`) и правила игры (`GameRules`). Полностью независим от фреймворков и деталей реализации
+- **Application** (`ru.mipt.bit.platformer.application`): Слой логики приложения. Координирует игровой процесс через `GameLoop`, определяет интерфейсы для генерации уровней (`LevelGenerator`) и фабрики команд (`CommandsFactory`). Зависит только от Domain
+- **Infrastructure** (`ru.mipt.bit.platformer.infrastructure`): Слой инфраструктуры. Реализует интерфейсы Application (например, `CommandsFactoryImpl`, `LevelGeneratorImpl`) и отвечает за взаимодействие с внешним миром (рендеринг через `WorldRenderer`, ввод пользователя)
+- **Config** (`ru.mipt.bit.platformer.config`): Слой конфигурации. Собирает приложение воедино, внедряя зависимости (Spring Context, `GameConfig`, `GraphicsConfigurator`). Точка входа в приложение
 
 ## Требования
 
