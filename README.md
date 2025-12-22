@@ -1,5 +1,49 @@
 # Tank Software Design Platformer Game
 
+## Архитектура проекта
+
+Проект следует принципам **Луковой архитектуры (Onion Architecture)**:
+
+```mermaid
+graph TD
+    subgraph Config [Config & Entry Point]
+        L[GameDesktopLauncher]
+        C[GameConfig]
+    end
+
+    subgraph Infrastructure [Infrastructure Layer]
+        G[Graphics (LibGDX)]
+        I[Input Impl]
+        AI[AI Impl]
+    end
+
+    subgraph Application [Application Layer]
+        GL[GameLoop]
+        LL[LogicalLevel]
+        CMD[Commands]
+    end
+
+    subgraph Domain [Domain Layer]
+        E[Entities]
+        Interfaces[Interfaces]
+    end
+
+    %% Dependencies
+    Config --> Infrastructure
+    Config --> Application
+    Config --> Domain
+
+    Infrastructure --> Application
+    Infrastructure --> Domain
+
+    Application --> Domain
+```
+
+- **Domain** (`ru.mipt.bit.platformer.domain`): Центральный слой. Содержит бизнес-сущности (`Tank`, `Bullet`) и интерфейсы. Не зависит от внешних библиотек.
+- **Application** (`ru.mipt.bit.platformer.application`): Слой вариантов использования (Use Cases). Управляет потоком игры (`GameLoop`), логикой уровня и командами. Зависит только от Domain.
+- **Infrastructure** (`ru.mipt.bit.platformer.infrastructure`): Слой деталей реализации. Реализует интерфейсы из Domain/Application. Здесь находится код, связанный с LibGDX (графика, ввод) и конкретные реализации алгоритмов.
+- **Config** (`ru.mipt.bit.platformer.config`): Слой конфигурации. Использует Spring для связывания всех компонентов воедино (Dependency Injection).
+
 ## Требования
 
 - Java 17 или выше
