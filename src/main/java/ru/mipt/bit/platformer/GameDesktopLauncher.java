@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -32,6 +33,11 @@ import ru.mipt.bit.platformer.classes.Positionable;
 import ru.mipt.bit.platformer.classes.Tank;
 import ru.mipt.bit.platformer.classes.Tree;
 import ru.mipt.bit.platformer.commands.MoveCommand;
+import ru.mipt.bit.platformer.commands.ToggleHealthBarCommand;
+import ru.mipt.bit.platformer.graphics.EntityRenderer;
+import ru.mipt.bit.platformer.graphics.HealthBarDisplay;
+import ru.mipt.bit.platformer.graphics.HealthBarEntityRenderer;
+import ru.mipt.bit.platformer.graphics.SpriteEntityRenderer;
 import ru.mipt.bit.platformer.logic.OccupancyManager;
 import ru.mipt.bit.platformer.util.TileMovement;
 
@@ -51,6 +57,9 @@ public class GameDesktopLauncher implements ApplicationListener {
     private ArrayList<Graphics> enemyGraphics;
     private ArrayList<RandomAIController> enemyAI;
     private OccupancyManager occupancy;
+    private SpriteEntityRenderer spriteRenderer;
+    private HealthBarEntityRenderer healthBarRenderer;
+    private HealthBarDisplay healthBarDisplay;
 
     @Override
     public void create() {
@@ -126,6 +135,9 @@ public class GameDesktopLauncher implements ApplicationListener {
                 attempts++;
             }
         }
+        spriteRenderer = new SpriteEntityRenderer();
+        healthBarRenderer = new HealthBarEntityRenderer(spriteRenderer);
+        healthBarDisplay = new HealthBarDisplay(spriteRenderer, healthBarRenderer);
     }
 
     private void glClearScreen() {
@@ -149,7 +161,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         batch.end();
     }
 
-    private void renderPlayer() {
+    private void renderPlayer(EntityRenderer renderer) {
         // get time passed since the last render
         float deltaTime = Gdx.graphics.getDeltaTime();
         player.movementProgress = continueProgress(player.movementProgress, deltaTime, player.movementSpeed);
@@ -167,10 +179,10 @@ public class GameDesktopLauncher implements ApplicationListener {
             tileMovement.moveRectangleBetweenTileCenters(playerGraphics.rectangle, player.coordinates,
                     player.destinationCoordinates, player.movementProgress);
         }
-        drawTextureRegionUnscaled(batch, playerGraphics.graphics, playerGraphics.rectangle, player.rotation);
+        renderer.render(batch, player, playerGraphics);
     }
 
-    private void renderEnemies(TiledMapTileLayer groundLayer) {
+    private void renderEnemies(TiledMapTileLayer groundLayer, EntityRenderer renderer) {
         if (enemies == null)
             return;
         float deltaTime = Gdx.graphics.getDeltaTime();
@@ -190,7 +202,7 @@ public class GameDesktopLauncher implements ApplicationListener {
             }
             tileMovement.moveRectangleBetweenTileCenters(g.rectangle, enemy.coordinates,
                     enemy.destinationCoordinates, enemy.movementProgress);
-            drawTextureRegionUnscaled(batch, g.graphics, g.rectangle, enemy.rotation);
+            renderer.render(batch, enemy, g);
         }
     }
 
@@ -205,16 +217,20 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void render() {
+        if (Gdx.input.isKeyJustPressed(Keys.L)) {
+            new ToggleHealthBarCommand(healthBarDisplay).execute();
+        }
         startRendering();
 
         // render player
-        renderPlayer();
+        EntityRenderer renderer = healthBarDisplay.getRenderer();
+        renderPlayer(renderer);
 
         // render obstacles
         renderObstacles();
 
         // render enemies
-        renderEnemies((TiledMapTileLayer) level.getLayers().get(0));
+        renderEnemies((TiledMapTileLayer) level.getLayers().get(0), renderer);
 
         finishRendering();
     }
@@ -240,6 +256,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         // com.badlogic.gdx.utils.Disposable)
         level.dispose();
         batch.dispose();
+        healthBarRenderer.dispose();
     }
 
     public static void main(String[] args) {
