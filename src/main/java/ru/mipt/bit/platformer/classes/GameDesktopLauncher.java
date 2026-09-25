@@ -1,4 +1,4 @@
-package ru.mipt.bit.platformer;
+package ru.mipt.bit.platformer.classes;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -18,6 +18,7 @@ import ru.mipt.bit.platformer.classes.GameObject;
 import ru.mipt.bit.platformer.classes.Graphics;
 import ru.mipt.bit.platformer.classes.KeyboardListener;
 import ru.mipt.bit.platformer.classes.Direction;
+import ru.mipt.bit.platformer.input.InputController;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 import static com.badlogic.gdx.math.MathUtils.isEqual;
@@ -37,12 +38,12 @@ public class GameDesktopLauncher implements ApplicationListener {
     private Tree tree;
     private Graphics tankGraphics;
     private Graphics treeGraphics;
-    private KeyboardListener keyboardListener;
+    private InputController inputController;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        keyboardListener = new KeyboardListener();
+        inputController = new KeyboardListener();
 
         level = new TmxMapLoader().load("level.tmx");
         levelRenderer = createSingleLayerMapRenderer(level, batch);
@@ -51,10 +52,10 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         tank = new Tank(1, 1, MOVEMENT_SPEED);
         tree = new Tree(1, 3);
-        
+
         tankGraphics = new Graphics("images/tank_blue.png");
         treeGraphics = new Graphics("images/greenTree.png");
-        
+
         moveRectangleAtTileCenter(groundLayer, treeGraphics.boundingBox, tree.coordinates);
     }
 
@@ -65,12 +66,12 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         float deltaTime = Gdx.graphics.getDeltaTime();
 
-        Direction direction = keyboardListener.getDirection();
+        Direction direction = inputController.getDirection();
         GameObject[] obstacles = {tree};
-        
+
         tank.tryMove(direction, obstacles);
-        
-        if (keyboardListener.isFireButtonPressed()) {
+
+        if (inputController.isFireButtonPressed()) {
             tank.fire();
         }
 
@@ -93,17 +94,14 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void resize(int width, int height) {
-        // Не реагируем на изменение размера окна
     }
 
     @Override
     public void pause() {
-        // Игра не приостанавливается
     }
 
     @Override
     public void resume() {
-        // Игра не приостанавливается
     }
 
     @Override

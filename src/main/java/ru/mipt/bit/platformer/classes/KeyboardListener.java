@@ -1,9 +1,11 @@
 package ru.mipt.bit.platformer.classes;
 
 import com.badlogic.gdx.Gdx;
+import ru.mipt.bit.platformer.input.InputController;
+
 import static com.badlogic.gdx.Input.Keys.*;
 
-public class KeyboardListener {
+public class KeyboardListener implements InputController {
     
     public Direction getDirection() {
         if (Gdx.input.isKeyPressed(UP) || Gdx.input.isKeyPressed(W)) {
