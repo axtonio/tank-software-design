@@ -1,74 +1,58 @@
 package ru.mipt.bit.platformer.classes;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.GridPoint2;
 
 import static com.badlogic.gdx.math.MathUtils.isEqual;
-import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 
 public class Tank extends GameObject {
     public GridPoint2 destinationCoordinates;
     public float movementProgress = 1f;
     public float rotation;
-    
+    public float movementSpeed;
     private Direction currentDirection;
     
-    public Tank(String imagePath, int xCoordinate, int yCoordinate) {
-        super(imagePath, xCoordinate, yCoordinate);
+    public Tank(int xCoordinate, int yCoordinate, float movementSpeed) {
+        super(xCoordinate, yCoordinate);
         this.destinationCoordinates = new GridPoint2(coordinates);
         this.rotation = 0f;
         this.currentDirection = Direction.RIGHT;
+        this.movementSpeed = movementSpeed;
     }
     
-    public void tryMove(Direction direction, GameObject obstacle) {
+    public void tryMove(Direction direction, GameObject[] obstacles) {
         if (isEqual(movementProgress, 1f)) {
             GridPoint2 targetPosition = getTargetPosition(direction);
+            boolean canMove = true;
             
-            if (!obstacle.coordinates.equals(targetPosition)) {
+            for (GameObject obstacle : obstacles) {
+                if (targetPosition.equals(obstacle.coordinates)) {
+                    canMove = false;
+                    break;
+                }
+            }
+            
+            if (canMove) {
                 destinationCoordinates.set(targetPosition);
                 movementProgress = 0f;
             }
             
-            rotation = direction.getRotation();
-            currentDirection = direction;
+            if (direction != Direction.IDLE) {
+                rotation = direction.getRotation();
+                currentDirection = direction;
+            }
         }
     }
     
     private GridPoint2 getTargetPosition(Direction direction) {
-        GridPoint2 target = new GridPoint2(coordinates);
-        switch (direction) {
-            case UP:
-                target.y++;
-                break;
-            case LEFT:
-                target.x--;
-                break;
-            case DOWN:
-                target.y--;
-                break;
-            case RIGHT:
-                target.x++;
-                break;
+        if (direction == Direction.IDLE) {
+            return new GridPoint2(coordinates);
         }
-        return target;
+        GridPoint2 targetPosition = new GridPoint2(coordinates);
+        targetPosition.add(direction.getVector());
+        return targetPosition;
     }
     
-    public enum Direction {
-        UP(90f),
-        LEFT(-180f),
-        DOWN(-90f),
-        RIGHT(0f);
-        
-        private final float rotation;
-        
-        Direction(float rotation) {
-            this.rotation = rotation;
-        }
-        
-        public float getRotation() {
-            return rotation;
-        }
+    public void fire() {
+        // Логика стрельбы будет добавлена позже
     }
 }
