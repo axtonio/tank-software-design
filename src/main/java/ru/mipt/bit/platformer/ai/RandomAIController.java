@@ -6,6 +6,15 @@ import ru.mipt.bit.platformer.classes.Direction;
 
 public class RandomAIController {
     private final Random random = new Random();
+    private final float shootProbability;
+
+    public RandomAIController() {
+        this(0.15f);
+    }
+
+    public RandomAIController(float shootProbability) {
+        this.shootProbability = Math.max(0f, Math.min(1f, shootProbability));
+    }
 
     public Direction chooseDirection() {
         int r = random.nextInt(4);
@@ -19,6 +28,10 @@ public class RandomAIController {
             default:
                 return Direction.RIGHT;
         }
+    }
+
+    public boolean shouldShoot() {
+        return random.nextFloat() < shootProbability;
     }
 }
 

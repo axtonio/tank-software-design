@@ -12,13 +12,14 @@ public class MovableEntity extends Positionable implements Movable {
     public float rotation;
     public ObjectDirection direction;
     public float movementSpeed = 0f;
+    private Direction facingDirection = Direction.RIGHT;
 
     public MovableEntity(int xCooordinate, int yCoordinate, float movementSpeed) {
         super(xCooordinate, yCoordinate);
 
         // set initial position
         this.destinationCoordinates = new GridPoint2(this.coordinates);
-        this.rotation = 0f;
+        this.rotation = facingDirection.rotation;
         this.direction = new ObjectDirection();
         this.movementSpeed = movementSpeed;
     }
@@ -56,5 +57,17 @@ public class MovableEntity extends Positionable implements Movable {
 
     public void moveSelfInCurrentDirection(ArrayList<? extends Positionable> obstacles) {
         tryGo(obstacles);
+    }
+
+    public void setFacingDirection(Direction direction) {
+        if (direction == null || direction == Direction.IDLE) {
+            return;
+        }
+        this.facingDirection = direction;
+        this.rotation = direction.rotation;
+    }
+
+    public Direction getFacingDirection() {
+        return facingDirection;
     }
 }

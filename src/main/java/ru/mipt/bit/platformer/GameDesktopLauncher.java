@@ -1,14 +1,13 @@
 package ru.mipt.bit.platformer;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
-import static com.badlogic.gdx.math.MathUtils.isEqual;
-import static ru.mipt.bit.platformer.util.GdxGameUtils.continueProgress;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createSingleLayerMapRenderer;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.getSingleLayer;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.moveRectangleAtTileCenter;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
@@ -27,96 +26,83 @@ import com.badlogic.gdx.math.Interpolation;
 import ru.mipt.bit.platformer.ai.RandomAIController;
 import ru.mipt.bit.platformer.classes.Direction;
 import ru.mipt.bit.platformer.classes.Graphics;
+import ru.mipt.bit.platformer.classes.KeyboardListener;
 import ru.mipt.bit.platformer.classes.MapLayout;
 import ru.mipt.bit.platformer.classes.MovableEntity;
 import ru.mipt.bit.platformer.classes.Positionable;
 import ru.mipt.bit.platformer.classes.Tank;
 import ru.mipt.bit.platformer.classes.Tree;
+import ru.mipt.bit.platformer.commands.Command;
 import ru.mipt.bit.platformer.commands.MoveCommand;
+import ru.mipt.bit.platformer.commands.ShootCommand;
 import ru.mipt.bit.platformer.commands.ToggleHealthBarCommand;
 import ru.mipt.bit.platformer.graphics.EntityRenderer;
+import ru.mipt.bit.platformer.graphics.GraphicsLevel;
 import ru.mipt.bit.platformer.graphics.HealthBarDisplay;
 import ru.mipt.bit.platformer.graphics.HealthBarEntityRenderer;
 import ru.mipt.bit.platformer.graphics.SpriteEntityRenderer;
+import ru.mipt.bit.platformer.logic.LogicalLevel;
 import ru.mipt.bit.platformer.logic.OccupancyManager;
+import ru.mipt.bit.platformer.recommendation.DistanceBasedRecommendationClient;
+import ru.mipt.bit.platformer.recommendation.RecommendationEngineAdapter;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 public class GameDesktopLauncher implements ApplicationListener {
     private Batch batch;
-
     private TiledMap level;
     private MapRenderer levelRenderer;
     private TileMovement tileMovement;
+    private TiledMapTileLayer groundLayer;
     private MapLayout mapLayout;
-
-    private MovableEntity player;
-    private ArrayList<Positionable> obstacles;
-    private Graphics playerGraphics;
-    private ArrayList<Graphics> obstaclesGraphics;
-    private ArrayList<Tank> enemies;
-    private ArrayList<Graphics> enemyGraphics;
-    private ArrayList<RandomAIController> enemyAI;
     private OccupancyManager occupancy;
+    private LogicalLevel logicalLevel;
+    private GraphicsLevel graphicsLevel;
     private SpriteEntityRenderer spriteRenderer;
     private HealthBarEntityRenderer healthBarRenderer;
     private HealthBarDisplay healthBarDisplay;
+    private KeyboardListener keyboardListener;
+    private Graphics tankPrototype;
+    private Graphics treePrototype;
+    private Graphics bulletPrototype;
+    private final ArrayList<Command> pendingCommands = new ArrayList<>();
 
     @Override
     public void create() {
         batch = new SpriteBatch();
+        keyboardListener = new KeyboardListener();
+        tankPrototype = new Graphics("images/tank_blue.png");
+        treePrototype = new Graphics("images/greenTree.png");
+        bulletPrototype = new Graphics("images/bullet.png");
 
-        // load level tiles
         level = new TmxMapLoader().load("level.tmx");
         levelRenderer = createSingleLayerMapRenderer(level, batch);
-        TiledMapTileLayer groundLayer = getSingleLayer(level);
+        groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
         occupancy = new OccupancyManager(groundLayer.getWidth(), groundLayer.getHeight());
 
-        // ========== CHOOSE GENERATION MODE ==========
-        // MODE 1: Random generation with random player position and obstacles
-        // mapLayout = new MapLayout(groundLayer);
-
-        // MODE 2: File-based generation - reads from mapLayout.txt
-        // Format: T = Tree (obstacle), X = Player start, _ = empty cell
         mapLayout = new MapLayout("mapLayout.txt");
-        // ============================================
 
         GridPoint2 playerCoordinates = mapLayout.layout.get("Player").get(0);
-        player = new Tank(playerCoordinates.x, playerCoordinates.y, 0.4f);
+        Tank player = new Tank(playerCoordinates.x, playerCoordinates.y, 0.4f);
 
-        obstacles = new ArrayList<>();
+        ArrayList<Tree> obstacles = new ArrayList<>();
         for (GridPoint2 obstacleCoordinates : mapLayout.layout.get("Obstacles")) {
             obstacles.add(new Tree(obstacleCoordinates.x, obstacleCoordinates.y));
         }
         java.util.HashSet<GridPoint2> staticObs = new java.util.HashSet<>();
-        for (Positionable o : obstacles) {
-            staticObs.add(new GridPoint2(o.coordinates));
+        for (Positionable obstacle : obstacles) {
+            staticObs.add(new GridPoint2(obstacle.coordinates));
         }
         occupancy.setStaticObstacles(staticObs);
 
-        playerGraphics = new Graphics("images/tank_blue.png");
-        obstaclesGraphics = new ArrayList<>();
-        for (int i = 0; i < obstacles.size(); i++) {
-            obstaclesGraphics.add(new Graphics("images/greenTree.png"));
-        }
-
-        for (int i = 0; i < obstacles.size(); i++) {
-            Positionable obstacle = obstacles.get(i);
-            Graphics obstacleG = obstaclesGraphics.get(i);
-            moveRectangleAtTileCenter(groundLayer, obstacleG.rectangle, obstacle.coordinates);
-        }
-
-        enemies = new ArrayList<>();
-        enemyGraphics = new ArrayList<>();
-        enemyAI = new ArrayList<>();
-
-        // Generate random enemy tanks on empty tiles
+        ArrayList<Tank> enemies = new ArrayList<>();
+        ArrayList<RandomAIController> enemyAI = new ArrayList<>();
         java.util.Random rnd = new java.util.Random();
-        int enemyCount = 3;
+        int enemyCount = 2;
         java.util.HashSet<String> occupied = new java.util.HashSet<>();
         occupied.add(player.coordinates.x + "," + player.coordinates.y);
-        for (Positionable o : obstacles) {
-            occupied.add(o.coordinates.x + "," + o.coordinates.y);
+        for (Positionable obstacle : obstacles) {
+            occupied.add(obstacle.coordinates.x + "," + obstacle.coordinates.y);
         }
         for (int e = 0; e < enemyCount; e++) {
             int attempts = 0;
@@ -127,7 +113,6 @@ public class GameDesktopLauncher implements ApplicationListener {
                 if (!occupied.contains(key)) {
                     Tank enemy = new Tank(x, y, 0.4f);
                     enemies.add(enemy);
-                    enemyGraphics.add(new Graphics("images/tank_blue.png"));
                     enemyAI.add(new RandomAIController());
                     occupied.add(key);
                     break;
@@ -135,6 +120,18 @@ public class GameDesktopLauncher implements ApplicationListener {
                 attempts++;
             }
         }
+        RecommendationEngineAdapter recommendationAdapter = new RecommendationEngineAdapter(
+                new DistanceBasedRecommendationClient());
+
+        logicalLevel = new LogicalLevel(player, obstacles, enemies, enemyAI, occupancy, recommendationAdapter);
+        player.setProjectileRegistry(logicalLevel);
+        for (Tank enemy : enemies) {
+            enemy.setProjectileRegistry(logicalLevel);
+        }
+
+        graphicsLevel = new GraphicsLevel(tankPrototype, treePrototype, bulletPrototype);
+        logicalLevel.addObserver(graphicsLevel);
+
         spriteRenderer = new SpriteEntityRenderer();
         healthBarRenderer = new HealthBarEntityRenderer(spriteRenderer);
         healthBarDisplay = new HealthBarDisplay(spriteRenderer, healthBarRenderer);
@@ -161,58 +158,47 @@ public class GameDesktopLauncher implements ApplicationListener {
         batch.end();
     }
 
-    private void renderPlayer(EntityRenderer renderer) {
-        // get time passed since the last render
-        float deltaTime = Gdx.graphics.getDeltaTime();
-        player.movementProgress = continueProgress(player.movementProgress, deltaTime, player.movementSpeed);
-        if (isEqual(player.movementProgress, 1f)) {
-            // record that the player has reached his/her destination
-            player.coordinates.set(player.destinationCoordinates);
-            occupancy.release(player);
+    private void renderMovableEntities(EntityRenderer renderer) {
+        for (Map.Entry<MovableEntity, Graphics> entry : graphicsLevel.getMovableEntries()) {
+            MovableEntity entity = entry.getKey();
+            Graphics graphics = entry.getValue();
+            tileMovement.moveRectangleBetweenTileCenters(graphics.rectangle, entity.coordinates,
+                    entity.destinationCoordinates, entity.movementProgress);
+            renderer.render(batch, entity, graphics);
         }
-        if (obstacles != null) {
-            // keyboard-driven move via command with occupancy and bounds
-            ru.mipt.bit.platformer.classes.KeyboardListener kl = new ru.mipt.bit.platformer.classes.KeyboardListener();
-            ru.mipt.bit.platformer.classes.Direction d = kl.captureMovementKey();
-            new MoveCommand((MovableEntity) player, d, occupancy).execute();
-
-            tileMovement.moveRectangleBetweenTileCenters(playerGraphics.rectangle, player.coordinates,
-                    player.destinationCoordinates, player.movementProgress);
-        }
-        renderer.render(batch, player, playerGraphics);
     }
 
-    private void renderEnemies(TiledMapTileLayer groundLayer, EntityRenderer renderer) {
-        if (enemies == null)
+    private void renderStaticObjects() {
+        for (Map.Entry<Positionable, Graphics> entry : graphicsLevel.getStaticEntries()) {
+            Positionable object = entry.getKey();
+            Graphics graphics = entry.getValue();
+            moveRectangleAtTileCenter(groundLayer, graphics.rectangle, object.coordinates);
+            drawTextureRegionUnscaled(batch, graphics.graphics, graphics.rectangle, 0f);
+        }
+    }
+
+    private void collectCommands() {
+        pendingCommands.clear();
+        Tank player = logicalLevel.getPlayer();
+        if (player == null || player.getHealth() <= 0) {
+            logicalLevel.collectEnemyCommands(pendingCommands);
             return;
-        float deltaTime = Gdx.graphics.getDeltaTime();
-        for (int i = 0; i < enemies.size(); i++) {
-            Tank enemy = enemies.get(i);
-            Graphics g = enemyGraphics.get(i);
-            enemy.movementProgress = continueProgress(enemy.movementProgress, deltaTime, enemy.movementSpeed);
-            if (isEqual(enemy.movementProgress, 1f)) {
-                enemy.coordinates.set(enemy.destinationCoordinates);
-                occupancy.release(enemy);
-                // choose a random direction and try to move
-                Direction dir = enemyAI.get(i).chooseDirection();
-                new MoveCommand(enemy, dir, occupancy).execute();
-            } else {
-                // keep reservation updated during move
-                occupancy.updateReservation(enemy, enemy.coordinates, enemy.destinationCoordinates);
-            }
-            tileMovement.moveRectangleBetweenTileCenters(g.rectangle, enemy.coordinates,
-                    enemy.destinationCoordinates, enemy.movementProgress);
-            renderer.render(batch, enemy, g);
         }
+        Direction direction = keyboardListener.captureMovementKey();
+        pendingCommands.add(new MoveCommand(player, direction, logicalLevel.getOccupancy()));
+        if (keyboardListener.isFireButtonPressed()) {
+            pendingCommands.add(new ShootCommand(player));
+        }
+        logicalLevel.collectEnemyCommands(pendingCommands);
     }
 
-    private void renderObstacles() {
-        if (obstaclesGraphics != null) {
-            for (int i = 0; i < obstaclesGraphics.size(); i++) {
-                Graphics obstacleG = obstaclesGraphics.get(i);
-                drawTextureRegionUnscaled(batch, obstacleG.graphics, obstacleG.rectangle, 0f);
+    private void executeCommands() {
+        for (Command command : pendingCommands) {
+            if (command != null) {
+                command.execute();
             }
         }
+        pendingCommands.clear();
     }
 
     @Override
@@ -220,18 +206,14 @@ public class GameDesktopLauncher implements ApplicationListener {
         if (Gdx.input.isKeyJustPressed(Keys.L)) {
             new ToggleHealthBarCommand(healthBarDisplay).execute();
         }
+        collectCommands();
+        executeCommands();
+        logicalLevel.tick(Gdx.graphics.getDeltaTime());
+
         startRendering();
-
-        // render player
         EntityRenderer renderer = healthBarDisplay.getRenderer();
-        renderPlayer(renderer);
-
-        // render obstacles
-        renderObstacles();
-
-        // render enemies
-        renderEnemies((TiledMapTileLayer) level.getLayers().get(0), renderer);
-
+        renderMovableEntities(renderer);
+        renderStaticObjects();
         finishRendering();
     }
 
@@ -252,11 +234,12 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void dispose() {
-        // dispose of all the native resources (classes which implement
-        // com.badlogic.gdx.utils.Disposable)
         level.dispose();
         batch.dispose();
         healthBarRenderer.dispose();
+        if (graphicsLevel != null) {
+            graphicsLevel.dispose();
+        }
     }
 
     public static void main(String[] args) {

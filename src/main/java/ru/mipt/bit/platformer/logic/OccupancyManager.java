@@ -15,6 +15,7 @@ public class OccupancyManager {
 
     private final Set<GridPoint2> staticObstacles = new HashSet<>();
     private final Map<Object, MoveReservation> reservations = new HashMap<>();
+    private final Map<Object, GridPoint2> occupiedPositions = new HashMap<>();
 
     public OccupancyManager(int mapWidth, int mapHeight) {
         this.mapWidth = mapWidth;
@@ -38,6 +39,14 @@ public class OccupancyManager {
         if (staticObstacles.contains(to)) {
             return false;
         }
+        for (Map.Entry<Object, GridPoint2> entry : occupiedPositions.entrySet()) {
+            if (entry.getKey() == actorKey) {
+                continue;
+            }
+            if (entry.getValue().equals(to)) {
+                return false;
+            }
+        }
         for (Map.Entry<Object, MoveReservation> entry : reservations.entrySet()) {
             if (entry.getKey() == actorKey) {
                 continue;
@@ -54,12 +63,32 @@ public class OccupancyManager {
         reservations.put(actorKey, new MoveReservation(new GridPoint2(from), new GridPoint2(to)));
     }
 
+    public boolean isStaticObstacle(GridPoint2 position) {
+        return staticObstacles.contains(position);
+    }
+
+    public void removeStaticObstacle(GridPoint2 position) {
+        staticObstacles.remove(position);
+    }
+
     public void release(Object actorKey) {
         reservations.remove(actorKey);
     }
 
     public void updateReservation(Object actorKey, GridPoint2 from, GridPoint2 to) {
         reservations.put(actorKey, new MoveReservation(new GridPoint2(from), new GridPoint2(to)));
+    }
+
+    public void registerPosition(Object actorKey, GridPoint2 position) {
+        occupiedPositions.put(actorKey, new GridPoint2(position));
+    }
+
+    public void commitPosition(Object actorKey, GridPoint2 position) {
+        registerPosition(actorKey, position);
+    }
+
+    public void unregisterPosition(Object actorKey) {
+        occupiedPositions.remove(actorKey);
     }
 
     private static class MoveReservation {

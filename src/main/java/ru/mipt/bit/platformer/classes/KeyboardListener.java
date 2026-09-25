@@ -49,6 +49,6 @@ public class KeyboardListener implements InputController {
     }
 
     public boolean isFireButtonPressed() {
-        return Gdx.input.isKeyPressed(SPACE);
+        return Gdx.input.isKeyJustPressed(SPACE);
     }
 }

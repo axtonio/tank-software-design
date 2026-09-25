@@ -15,17 +15,28 @@ public class Graphics {
     public TextureRegion textureRegion;
     public Rectangle boundingBox;
 
+    private final boolean ownsTexture;
+
     public Graphics(String imagePath) {
-        this.texture = new Texture(imagePath);
+        this(new Texture(imagePath), true);
+    }
+
+    public Graphics(Graphics prototype) {
+        this(prototype.texture, false);
+    }
+
+    private Graphics(Texture texture, boolean ownsTexture) {
+        this.texture = texture;
         this.graphics = new TextureRegion(this.texture);
         this.rectangle = createBoundingRectangle(this.graphics);
-
-        // For backward compatibility with tests
         this.textureRegion = this.graphics;
         this.boundingBox = this.rectangle;
+        this.ownsTexture = ownsTexture;
     }
 
     public void dispose() {
-        texture.dispose();
+        if (ownsTexture && texture != null) {
+            texture.dispose();
+        }
     }
 }

@@ -4,9 +4,12 @@ import static com.badlogic.gdx.math.MathUtils.isEqual;
 
 import com.badlogic.gdx.math.GridPoint2;
 
+import ru.mipt.bit.platformer.logic.ProjectileRegistry;
+
 public class Tank extends MovableEntity implements HasHealth {
     private final int maxHealth;
     private int health;
+    private ProjectileRegistry projectileRegistry;
 
     public Tank(int xCooordinate, int yCoordinate, float movementSpeed) {
         super(xCooordinate, yCoordinate, movementSpeed);
@@ -32,7 +35,7 @@ public class Tank extends MovableEntity implements HasHealth {
             }
 
             if (dir != Direction.IDLE) {
-                rotation = dir.rotation;
+                setFacingDirection(dir);
             }
         }
     }
@@ -46,8 +49,28 @@ public class Tank extends MovableEntity implements HasHealth {
         return targetPosition;
     }
 
+    public void setProjectileRegistry(ProjectileRegistry projectileRegistry) {
+        this.projectileRegistry = projectileRegistry;
+    }
+
     public void fire() {
-        // Логика стрельбы будет добавлена позже
+        if (projectileRegistry == null) {
+            return;
+        }
+        Direction direction = getFacingDirection();
+        if (direction == null || direction == Direction.IDLE) {
+            direction = Direction.UP;
+        }
+        GridPoint2 spawnPoint = new GridPoint2(coordinates).add(direction.vector);
+        Bullet bullet = new Bullet(spawnPoint, direction, this);
+        projectileRegistry.register(bullet);
+    }
+
+    public void takeDamage(int damage) {
+        if (damage <= 0) {
+            return;
+        }
+        setHealth(health - damage);
     }
 
     @Override
