@@ -9,6 +9,9 @@ import static ru.mipt.bit.platformer.util.GdxGameUtils.moveRectangleAtTileCenter
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -36,6 +39,7 @@ import ru.mipt.bit.platformer.commands.Command;
 import ru.mipt.bit.platformer.commands.MoveCommand;
 import ru.mipt.bit.platformer.commands.ShootCommand;
 import ru.mipt.bit.platformer.commands.ToggleHealthBarCommand;
+import ru.mipt.bit.platformer.config.GameConfig;
 import ru.mipt.bit.platformer.graphics.EntityRenderer;
 import ru.mipt.bit.platformer.graphics.GraphicsLevel;
 import ru.mipt.bit.platformer.graphics.HealthBarDisplay;
@@ -43,11 +47,11 @@ import ru.mipt.bit.platformer.graphics.HealthBarEntityRenderer;
 import ru.mipt.bit.platformer.graphics.SpriteEntityRenderer;
 import ru.mipt.bit.platformer.logic.LogicalLevel;
 import ru.mipt.bit.platformer.logic.OccupancyManager;
-import ru.mipt.bit.platformer.recommendation.DistanceBasedRecommendationClient;
 import ru.mipt.bit.platformer.recommendation.RecommendationEngineAdapter;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 public class GameDesktopLauncher implements ApplicationListener {
+    private ApplicationContext applicationContext;
     private Batch batch;
     private TiledMap level;
     private MapRenderer levelRenderer;
@@ -68,8 +72,16 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void create() {
+        applicationContext = new AnnotationConfigApplicationContext(GameConfig.class);
+
+        keyboardListener = applicationContext.getBean(KeyboardListener.class);
+        RecommendationEngineAdapter recommendationAdapter = applicationContext
+                .getBean(RecommendationEngineAdapter.class);
+        spriteRenderer = applicationContext.getBean(SpriteEntityRenderer.class);
+        healthBarRenderer = applicationContext.getBean(HealthBarEntityRenderer.class);
+        healthBarDisplay = applicationContext.getBean(HealthBarDisplay.class);
+
         batch = new SpriteBatch();
-        keyboardListener = new KeyboardListener();
         tankPrototype = new Graphics("images/tank_blue.png");
         treePrototype = new Graphics("images/greenTree.png");
         bulletPrototype = new Graphics("images/bullet.png");
@@ -120,8 +132,6 @@ public class GameDesktopLauncher implements ApplicationListener {
                 attempts++;
             }
         }
-        RecommendationEngineAdapter recommendationAdapter = new RecommendationEngineAdapter(
-                new DistanceBasedRecommendationClient());
 
         logicalLevel = new LogicalLevel(player, obstacles, enemies, enemyAI, occupancy, recommendationAdapter);
         player.setProjectileRegistry(logicalLevel);
@@ -131,10 +141,6 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         graphicsLevel = new GraphicsLevel(tankPrototype, treePrototype, bulletPrototype);
         logicalLevel.addObserver(graphicsLevel);
-
-        spriteRenderer = new SpriteEntityRenderer();
-        healthBarRenderer = new HealthBarEntityRenderer(spriteRenderer);
-        healthBarDisplay = new HealthBarDisplay(spriteRenderer, healthBarRenderer);
     }
 
     private void glClearScreen() {
@@ -239,6 +245,9 @@ public class GameDesktopLauncher implements ApplicationListener {
         healthBarRenderer.dispose();
         if (graphicsLevel != null) {
             graphicsLevel.dispose();
+        }
+        if (applicationContext != null && applicationContext instanceof AnnotationConfigApplicationContext) {
+            ((AnnotationConfigApplicationContext) applicationContext).close();
         }
     }
 

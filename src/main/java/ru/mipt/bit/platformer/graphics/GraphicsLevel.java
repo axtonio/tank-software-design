@@ -10,7 +10,6 @@ import ru.mipt.bit.platformer.classes.Bullet;
 import ru.mipt.bit.platformer.classes.Graphics;
 import ru.mipt.bit.platformer.classes.MovableEntity;
 import ru.mipt.bit.platformer.classes.Positionable;
-import ru.mipt.bit.platformer.classes.Tank;
 import ru.mipt.bit.platformer.classes.Tree;
 import ru.mipt.bit.platformer.logic.LevelObserver;
 
@@ -81,4 +80,3 @@ public class GraphicsLevel implements LevelObserver, Disposable {
         bulletPrototype.dispose();
     }
 }
-
