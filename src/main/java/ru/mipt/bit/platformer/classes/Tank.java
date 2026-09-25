@@ -1,57 +1,47 @@
 package ru.mipt.bit.platformer.classes;
 
-import com.badlogic.gdx.math.GridPoint2;
-
 import static com.badlogic.gdx.math.MathUtils.isEqual;
 
-public class Tank extends GameObject {
-    public GridPoint2 destinationCoordinates;
-    public float movementProgress = 1f;
-    public float rotation;
-    public float movementSpeed;
-    private Direction currentDirection;
-    
-    public Tank(int xCoordinate, int yCoordinate, float movementSpeed) {
-        super(xCoordinate, yCoordinate);
-        this.destinationCoordinates = new GridPoint2(coordinates);
-        this.rotation = 0f;
-        this.currentDirection = Direction.RIGHT;
-        this.movementSpeed = movementSpeed;
+import com.badlogic.gdx.math.GridPoint2;
+
+public class Tank extends MovableEntity {
+
+    public Tank(int xCooordinate, int yCoordinate, float movementSpeed) {
+        super(xCooordinate, yCoordinate, movementSpeed);
     }
-    
-    public void tryMove(Direction direction, GameObject[] obstacles) {
+
+    public void tryMove(Direction dir, GameObject[] obstacles) {
         if (isEqual(movementProgress, 1f)) {
-            GridPoint2 targetPosition = getTargetPosition(direction);
+            GridPoint2 targetPosition = getTargetPosition(dir);
             boolean canMove = true;
-            
+
             for (GameObject obstacle : obstacles) {
                 if (targetPosition.equals(obstacle.coordinates)) {
                     canMove = false;
                     break;
                 }
             }
-            
+
             if (canMove) {
                 destinationCoordinates.set(targetPosition);
                 movementProgress = 0f;
             }
-            
-            if (direction != Direction.IDLE) {
-                rotation = direction.getRotation();
-                currentDirection = direction;
+
+            if (dir != Direction.IDLE) {
+                rotation = dir.rotation;
             }
         }
     }
-    
+
     private GridPoint2 getTargetPosition(Direction direction) {
         if (direction == Direction.IDLE) {
             return new GridPoint2(coordinates);
         }
         GridPoint2 targetPosition = new GridPoint2(coordinates);
-        targetPosition.add(direction.getVector());
+        targetPosition.add(direction.vector);
         return targetPosition;
     }
-    
+
     public void fire() {
         // Логика стрельбы будет добавлена позже
     }

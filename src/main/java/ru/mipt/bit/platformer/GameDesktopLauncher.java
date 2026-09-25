@@ -1,5 +1,15 @@
 package ru.mipt.bit.platformer;
 
+import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
+import static com.badlogic.gdx.math.MathUtils.isEqual;
+import static ru.mipt.bit.platformer.util.GdxGameUtils.continueProgress;
+import static ru.mipt.bit.platformer.util.GdxGameUtils.createSingleLayerMapRenderer;
+import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
+import static ru.mipt.bit.platformer.util.GdxGameUtils.getSingleLayer;
+import static ru.mipt.bit.platformer.util.GdxGameUtils.moveRectangleAtTileCenter;
+
+import java.util.ArrayList;
+
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
@@ -10,30 +20,29 @@ import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
-import com.badlogic.gdx.math.Rectangle;
-import ru.mipt.bit.platformer.util.TileMovement;
-import ru.mipt.bit.platformer.classes.Tank;
-import ru.mipt.bit.platformer.classes.GameObject;
-import ru.mipt.bit.platformer.classes.Tree;
 
-import static com.badlogic.gdx.Input.Keys.*;
-import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
-import static com.badlogic.gdx.math.MathUtils.isEqual;
-import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
+import ru.mipt.bit.platformer.classes.Graphics;
+import ru.mipt.bit.platformer.classes.MapLayout;
+import ru.mipt.bit.platformer.classes.MovableEntity;
+import ru.mipt.bit.platformer.classes.Positionable;
+import ru.mipt.bit.platformer.classes.Tank;
+import ru.mipt.bit.platformer.classes.Tree;
+import ru.mipt.bit.platformer.util.TileMovement;
 
 public class GameDesktopLauncher implements ApplicationListener {
-
-    private static final float MOVEMENT_SPEED = 0.4f;
-
     private Batch batch;
 
     private TiledMap level;
     private MapRenderer levelRenderer;
     private TileMovement tileMovement;
+    private MapLayout mapLayout;
 
-    private Tank tank;
-    private Tree tree;
+    private MovableEntity player;
+    private ArrayList<Positionable> obstacles;
+    private Graphics playerGraphics;
+    private ArrayList<Graphics> obstaclesGraphics;
 
     @Override
     public void create() {
@@ -45,58 +54,96 @@ public class GameDesktopLauncher implements ApplicationListener {
         TiledMapTileLayer groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
 
-        tank = new Tank("images/tank_blue.png", 1, 1);
-        tree = new Tree("images/greenTree.png", 1, 3);
-        moveRectangleAtTileCenter(groundLayer, tree.boundingBox, tree.coordinates);
+        // ========== CHOOSE GENERATION MODE ==========
+        // MODE 1: Random generation with random player position and obstacles
+        // mapLayout = new MapLayout(groundLayer);
+
+        // MODE 2: File-based generation - reads from mapLayout.txt
+        // Format: T = Tree (obstacle), X = Player start, _ = empty cell
+        mapLayout = new MapLayout("mapLayout.txt");
+        // ============================================
+
+        GridPoint2 playerCoordinates = mapLayout.layout.get("Player").get(0);
+        player = new Tank(playerCoordinates.x, playerCoordinates.y, 0.4f);
+
+        obstacles = new ArrayList<>();
+        for (GridPoint2 obstacleCoordinates : mapLayout.layout.get("Obstacles")) {
+            obstacles.add(new Tree(obstacleCoordinates.x, obstacleCoordinates.y));
+        }
+
+        playerGraphics = new Graphics("images/tank_blue.png");
+        obstaclesGraphics = new ArrayList<>();
+        for (int i = 0; i < obstacles.size(); i++) {
+            obstaclesGraphics.add(new Graphics("images/greenTree.png"));
+        }
+
+        for (int i = 0; i < obstacles.size(); i++) {
+            Positionable obstacle = obstacles.get(i);
+            Graphics obstacleG = obstaclesGraphics.get(i);
+            moveRectangleAtTileCenter(groundLayer, obstacleG.rectangle, obstacle.coordinates);
+        }
     }
 
-    @Override
-    public void render() {
-        // clear the screen
+    private void glClearScreen() {
         Gdx.gl.glClearColor(0f, 0f, 0.2f, 1f);
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
+    }
 
-        // get time passed since the last render
-        float deltaTime = Gdx.graphics.getDeltaTime();
-
-        if (Gdx.input.isKeyPressed(UP) || Gdx.input.isKeyPressed(W)) {
-            tank.tryMove(Tank.Direction.UP, tree);
-        }
-        if (Gdx.input.isKeyPressed(LEFT) || Gdx.input.isKeyPressed(A)) {
-            tank.tryMove(Tank.Direction.LEFT, tree);
-        }
-        if (Gdx.input.isKeyPressed(DOWN) || Gdx.input.isKeyPressed(S)) {
-            tank.tryMove(Tank.Direction.DOWN, tree);
-        }
-        if (Gdx.input.isKeyPressed(RIGHT) || Gdx.input.isKeyPressed(D)) {
-            tank.tryMove(Tank.Direction.RIGHT, tree);
-        }
-
-        // calculate interpolated player screen coordinates
-        tileMovement.moveRectangleBetweenTileCenters(tank.boundingBox, tank.coordinates, tank.destinationCoordinates, tank.movementProgress);
-
-        tank.movementProgress = continueProgress(tank.movementProgress, deltaTime, MOVEMENT_SPEED);
-        if (isEqual(tank.movementProgress, 1f)) {
-            // record that the player has reached his/her destination
-            tank.coordinates.set(tank.destinationCoordinates);
-        }
+    private void startRendering() {
+        // clear the screen
+        glClearScreen();
 
         // render each tile of the level
         levelRenderer.render();
 
         // start recording all drawing commands
         batch.begin();
+    }
 
-        // Универсальный рендеринг игровых объектов
-        renderGameObject(tank, tank.rotation);
-        renderGameObject(tree, 0f);
-
+    private void finishRendering() {
         // submit all drawing requests
         batch.end();
     }
 
-    private void renderGameObject(GameObject gameObject, float rotation) {
-        drawTextureRegionUnscaled(batch, gameObject.graphics, gameObject.boundingBox, rotation);
+    private void renderPlayer() {
+        // get time passed since the last render
+        float deltaTime = Gdx.graphics.getDeltaTime();
+        player.movementProgress = continueProgress(player.movementProgress, deltaTime, player.movementSpeed);
+        if (isEqual(player.movementProgress, 1f)) {
+            // record that the player has reached his/her destination
+            player.coordinates.set(player.destinationCoordinates);
+        }
+        if (obstacles != null) {
+            player.updateDirection();
+            player.moveSelfInCurrentDirection(obstacles);
+
+            // calculate interpolated player screen coordinates
+            tileMovement.moveRectangleBetweenTileCenters(playerGraphics.rectangle, player.coordinates,
+                    player.destinationCoordinates, player.movementProgress);
+        }
+        drawTextureRegionUnscaled(batch, playerGraphics.graphics, playerGraphics.rectangle, player.rotation);
+    }
+
+    private void renderObstacles() {
+        if (obstaclesGraphics != null) {
+            for (int i = 0; i < obstaclesGraphics.size(); i++) {
+                Graphics obstacleG = obstaclesGraphics.get(i);
+                drawTextureRegionUnscaled(batch, obstacleG.graphics, obstacleG.rectangle, 0f);
+            }
+        }
+    }
+
+    @Override
+    public void render() {
+        startRendering();
+
+        // render player
+        renderPlayer();
+
+        // render obstacles
+        renderObstacles();
+
+        finishRendering();
     }
 
     @Override
@@ -116,9 +163,8 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     @Override
     public void dispose() {
-        // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
-        tree.dispose();
-        tank.dispose();
+        // dispose of all the native resources (classes which implement
+        // com.badlogic.gdx.utils.Disposable)
         level.dispose();
         batch.dispose();
     }
