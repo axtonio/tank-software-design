@@ -15,6 +15,7 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 .idea
+tests/
 
 # macOS Finder metadata
 .DS_Store
