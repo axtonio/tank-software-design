@@ -23,12 +23,16 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
 
+import ru.mipt.bit.platformer.ai.RandomAIController;
+import ru.mipt.bit.platformer.classes.Direction;
 import ru.mipt.bit.platformer.classes.Graphics;
 import ru.mipt.bit.platformer.classes.MapLayout;
 import ru.mipt.bit.platformer.classes.MovableEntity;
 import ru.mipt.bit.platformer.classes.Positionable;
 import ru.mipt.bit.platformer.classes.Tank;
 import ru.mipt.bit.platformer.classes.Tree;
+import ru.mipt.bit.platformer.commands.MoveCommand;
+import ru.mipt.bit.platformer.logic.OccupancyManager;
 import ru.mipt.bit.platformer.util.TileMovement;
 
 public class GameDesktopLauncher implements ApplicationListener {
@@ -43,6 +47,10 @@ public class GameDesktopLauncher implements ApplicationListener {
     private ArrayList<Positionable> obstacles;
     private Graphics playerGraphics;
     private ArrayList<Graphics> obstaclesGraphics;
+    private ArrayList<Tank> enemies;
+    private ArrayList<Graphics> enemyGraphics;
+    private ArrayList<RandomAIController> enemyAI;
+    private OccupancyManager occupancy;
 
     @Override
     public void create() {
@@ -53,6 +61,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         levelRenderer = createSingleLayerMapRenderer(level, batch);
         TiledMapTileLayer groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
+        occupancy = new OccupancyManager(groundLayer.getWidth(), groundLayer.getHeight());
 
         // ========== CHOOSE GENERATION MODE ==========
         // MODE 1: Random generation with random player position and obstacles
@@ -70,6 +79,11 @@ public class GameDesktopLauncher implements ApplicationListener {
         for (GridPoint2 obstacleCoordinates : mapLayout.layout.get("Obstacles")) {
             obstacles.add(new Tree(obstacleCoordinates.x, obstacleCoordinates.y));
         }
+        java.util.HashSet<GridPoint2> staticObs = new java.util.HashSet<>();
+        for (Positionable o : obstacles) {
+            staticObs.add(new GridPoint2(o.coordinates));
+        }
+        occupancy.setStaticObstacles(staticObs);
 
         playerGraphics = new Graphics("images/tank_blue.png");
         obstaclesGraphics = new ArrayList<>();
@@ -81,6 +95,36 @@ public class GameDesktopLauncher implements ApplicationListener {
             Positionable obstacle = obstacles.get(i);
             Graphics obstacleG = obstaclesGraphics.get(i);
             moveRectangleAtTileCenter(groundLayer, obstacleG.rectangle, obstacle.coordinates);
+        }
+
+        enemies = new ArrayList<>();
+        enemyGraphics = new ArrayList<>();
+        enemyAI = new ArrayList<>();
+
+        // Generate random enemy tanks on empty tiles
+        java.util.Random rnd = new java.util.Random();
+        int enemyCount = 3;
+        java.util.HashSet<String> occupied = new java.util.HashSet<>();
+        occupied.add(player.coordinates.x + "," + player.coordinates.y);
+        for (Positionable o : obstacles) {
+            occupied.add(o.coordinates.x + "," + o.coordinates.y);
+        }
+        for (int e = 0; e < enemyCount; e++) {
+            int attempts = 0;
+            while (attempts < 1000) {
+                int x = rnd.nextInt(groundLayer.getWidth());
+                int y = rnd.nextInt(groundLayer.getHeight());
+                String key = x + "," + y;
+                if (!occupied.contains(key)) {
+                    Tank enemy = new Tank(x, y, 0.4f);
+                    enemies.add(enemy);
+                    enemyGraphics.add(new Graphics("images/tank_blue.png"));
+                    enemyAI.add(new RandomAIController());
+                    occupied.add(key);
+                    break;
+                }
+                attempts++;
+            }
         }
     }
 
@@ -112,16 +156,42 @@ public class GameDesktopLauncher implements ApplicationListener {
         if (isEqual(player.movementProgress, 1f)) {
             // record that the player has reached his/her destination
             player.coordinates.set(player.destinationCoordinates);
+            occupancy.release(player);
         }
         if (obstacles != null) {
-            player.updateDirection();
-            player.moveSelfInCurrentDirection(obstacles);
+            // keyboard-driven move via command with occupancy and bounds
+            ru.mipt.bit.platformer.classes.KeyboardListener kl = new ru.mipt.bit.platformer.classes.KeyboardListener();
+            ru.mipt.bit.platformer.classes.Direction d = kl.captureMovementKey();
+            new MoveCommand((MovableEntity) player, d, occupancy).execute();
 
-            // calculate interpolated player screen coordinates
             tileMovement.moveRectangleBetweenTileCenters(playerGraphics.rectangle, player.coordinates,
                     player.destinationCoordinates, player.movementProgress);
         }
         drawTextureRegionUnscaled(batch, playerGraphics.graphics, playerGraphics.rectangle, player.rotation);
+    }
+
+    private void renderEnemies(TiledMapTileLayer groundLayer) {
+        if (enemies == null)
+            return;
+        float deltaTime = Gdx.graphics.getDeltaTime();
+        for (int i = 0; i < enemies.size(); i++) {
+            Tank enemy = enemies.get(i);
+            Graphics g = enemyGraphics.get(i);
+            enemy.movementProgress = continueProgress(enemy.movementProgress, deltaTime, enemy.movementSpeed);
+            if (isEqual(enemy.movementProgress, 1f)) {
+                enemy.coordinates.set(enemy.destinationCoordinates);
+                occupancy.release(enemy);
+                // choose a random direction and try to move
+                Direction dir = enemyAI.get(i).chooseDirection();
+                new MoveCommand(enemy, dir, occupancy).execute();
+            } else {
+                // keep reservation updated during move
+                occupancy.updateReservation(enemy, enemy.coordinates, enemy.destinationCoordinates);
+            }
+            tileMovement.moveRectangleBetweenTileCenters(g.rectangle, enemy.coordinates,
+                    enemy.destinationCoordinates, enemy.movementProgress);
+            drawTextureRegionUnscaled(batch, g.graphics, g.rectangle, enemy.rotation);
+        }
     }
 
     private void renderObstacles() {
@@ -142,6 +212,9 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         // render obstacles
         renderObstacles();
+
+        // render enemies
+        renderEnemies((TiledMapTileLayer) level.getLayers().get(0));
 
         finishRendering();
     }
