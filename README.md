@@ -1,5 +1,8 @@
 # Tank Software Design Platformer Game
 
+В `main` собрана итоговая версия проекта из веток `hometask-1`–`hometask-8`
+и `final`. Учебные ветки сохраняют историю отдельных этапов.
+
 ## Архитектура проекта
 
 Проект следует принципам **Луковой архитектуры (Onion Architecture)**:
@@ -36,8 +39,8 @@
 
 ## Требования
 
-- Java 17 или выше
-- Gradle 8.5+
+- JDK 17 (версия, использованная при проверке)
+- Gradle 8.5 через включённый в репозиторий `./gradlew`; отдельная установка Gradle не нужна
 - macOS (поддержка других платформ через соответствующий бэкенд LibGDX)
 
 ```bash
@@ -93,16 +96,16 @@ open build/reports/tests/test/index.html
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
-./gradlew test --tests "ru.mipt.bit.platformer.classes.DirectionTest"
+./gradlew test --tests "ru.mipt.bit.platformer.domain.entities.DirectionTest"
 ```
 
 ## Управление танком
 
 - **W** или ↑ - движение вверх
-- **S** или ↓ - движение вниз  
+- **S** или ↓ - движение вниз
 - **A** или ← - движение влево
 - **D** или → - движение вправо
-- **SPACE** - выстрел (пока не было в дз)
+- **SPACE** - выстрел
 
 ## Конфигурация карты
 
@@ -114,7 +117,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 
 ## Генерация уровней
 
-В `GameDesktopLauncher.java` доступны два режима:
+Режим задаётся в методе `mapLayout()` класса `config/GameConfig.java`:
 
 ### Режим 1: Случайная генерация
 
@@ -139,11 +142,15 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 
 JAR файл будет находиться в: `build/libs/software-design-platformer-1.0-SNAPSHOT.jar`
 
-### Запуск JAR
+Этот JAR содержит классы проекта. Для запуска приложения вместе с зависимостями
+используйте дистрибутив, созданный плагином Gradle Application.
+
+### Запуск собранного приложения
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
-java -jar build/libs/software-design-platformer-1.0-SNAPSHOT.jar
+./gradlew installDist
+./build/install/software-design-platformer/bin/software-design-platformer
 ```
 
 ### Архивы дистрибутива
